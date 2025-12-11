@@ -154,6 +154,10 @@ Important:
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     const text = response.text();
+    console.log(
+      `[Gemini] ${modelName} raw response (first 200 chars):`,
+      text.slice(0, 200)
+    );
 
     // Clean up the response (remove markdown code blocks if present)
     let cleanedText = text.trim();
@@ -165,7 +169,18 @@ Important:
       cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
     }
 
-    const parsed = JSON.parse(cleanedText) as ReceiptAnalysis;
+    let parsed: ReceiptAnalysis;
+    try {
+      parsed = JSON.parse(cleanedText) as ReceiptAnalysis;
+    } catch (err) {
+      console.error(
+        "[Gemini] JSON parse error:",
+        err,
+        "cleanedText snippet:",
+        cleanedText.slice(0, 200)
+      );
+      throw err;
+    }
 
     // Ensure all items have IDs
     parsed.items = parsed.items.map((item, index) => ({
