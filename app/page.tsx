@@ -40,15 +40,19 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        // Try to parse JSON error, but handle text responses too
+        // Read response as text first (can only read once)
+        const text = await response.text();
         let errorMessage = "Failed to analyze receipt";
+
+        // Try to parse as JSON, but handle text responses too
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(text);
           errorMessage = errorData.error || errorData.details || errorMessage;
         } catch {
-          // If response is not JSON (e.g., "Forbidden"), read as text
-          const text = await response.text();
-          errorMessage = text || `Server returned ${response.status}: ${response.statusText}`;
+          // If response is not JSON (e.g., "Forbidden"), use text directly
+          errorMessage =
+            text ||
+            `Server returned ${response.status}: ${response.statusText}`;
         }
         throw new Error(errorMessage);
       }

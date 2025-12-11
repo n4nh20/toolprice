@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeReceipt } from "@/lib/gemini";
 
+// Force Node.js runtime since we use Buffer and other Node APIs
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
     const apiKey = process.env.GEMINI_API_KEY;
