@@ -25,12 +25,79 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [tax, setTax] = useState<number>(0);
 
+  // Resize image to reduce payload size
+  const resizeImage = (
+    file: File,
+    maxWidth: number = 1920,
+    maxHeight: number = 1920,
+    quality: number = 0.85
+  ): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error("Could not create blob"));
+                return;
+              }
+              const resizedFile = new File([blob], file.name, {
+                type: file.type || "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(resizedFile);
+            },
+            file.type || "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle file upload and analysis
   const handleFileUpload = async (file: File) => {
     setIsAnalyzing(true);
     setError(null);
 
     try {
+      // Resize image if it's too large (reduce payload size)
+      const resizedFile = await resizeImage(file, 1920, 1920, 0.85);
+
       // Convert file to base64 to avoid Vercel's FormData interception
       // Use FileReader for safe base64 conversion
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -42,9 +109,9 @@ export default function Home() {
           resolve(base64String);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(resizedFile);
       });
-      const mimeType = file.type || "image/jpeg";
+      const mimeType = resizedFile.type || "image/jpeg";
 
       const response = await fetch("/api/analyze-receipt", {
         method: "POST",
