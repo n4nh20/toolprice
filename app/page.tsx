@@ -32,8 +32,18 @@ export default function Home() {
 
     try {
       // Convert file to base64 to avoid Vercel's FormData interception
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      // Use FileReader for safe base64 conversion
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64String = result.split(",")[1] || result;
+          resolve(base64String);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
       const mimeType = file.type || "image/jpeg";
 
       const response = await fetch("/api/analyze-receipt", {
