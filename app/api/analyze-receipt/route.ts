@@ -23,30 +23,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("[API] Parsing form data...");
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
+    console.log("[API] Parsing request body...");
+    const body = await request.json();
+    const { image: base64, mimeType } = body;
 
-    console.log(
-      "[API] File received:",
-      file
-        ? {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-          }
-        : "null"
-    );
+    console.log("[API] Image data received:", {
+      base64Length: base64?.length || 0,
+      mimeType: mimeType || "not provided",
+    });
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!base64) {
+      return NextResponse.json(
+        { error: "No image data provided" },
+        { status: 400 }
+      );
     }
-
-    // Convert file to base64
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString("base64");
-    const mimeType = file.type || "image/jpeg";
 
     // Analyze receipt
     console.log("[API] Calling analyzeReceipt...");

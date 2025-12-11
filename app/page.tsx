@@ -31,16 +31,20 @@ export default function Home() {
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      // Convert file to base64 to avoid Vercel's FormData interception
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const mimeType = file.type || "image/jpeg";
 
       const response = await fetch("/api/analyze-receipt", {
         method: "POST",
-        body: formData,
-        // Explicitly disable Vercel's auto-upload handling
         headers: {
-          // Don't set Content-Type - let browser set it with boundary for FormData
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          image: base64,
+          mimeType: mimeType,
+        }),
       });
 
       if (!response.ok) {
