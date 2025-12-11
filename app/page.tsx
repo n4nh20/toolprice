@@ -40,8 +40,17 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to analyze receipt");
+        // Try to parse JSON error, but handle text responses too
+        let errorMessage = "Failed to analyze receipt";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch {
+          // If response is not JSON (e.g., "Forbidden"), read as text
+          const text = await response.text();
+          errorMessage = text || `Server returned ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data: ReceiptAnalysisType = await response.json();

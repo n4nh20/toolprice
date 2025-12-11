@@ -4,7 +4,11 @@ import { analyzeReceipt } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    console.log("[API] GEMINI_API_KEY exists:", !!apiKey);
+    console.log("[API] GEMINI_API_KEY length:", apiKey?.length || 0);
+
+    if (!apiKey) {
       console.error("GEMINI_API_KEY is missing in environment");
       return NextResponse.json(
         { error: "Server missing GEMINI_API_KEY" },

@@ -9,21 +9,38 @@ async function getAvailableModels(): Promise<string[]> {
   try {
     // Try to list models via API
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return [];
+    if (!apiKey) {
+      console.log("[Gemini] No API key available for model listing");
+      return [];
+    }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+    console.log(
+      "[Gemini] Fetching available models from:",
+      url.substring(0, 60) + "..."
     );
+
+    const response = await fetch(url);
+    console.log("[Gemini] Model list response status:", response.status);
+
     if (response.ok) {
       const data = await response.json();
-      return (
+      const models =
         data.models?.map((m: { name?: string }) =>
           m.name?.replace("models/", "")
-        ) || []
+        ) || [];
+      console.log("[Gemini] Found", models.length, "available models");
+      return models;
+    } else {
+      const text = await response.text();
+      console.error(
+        "[Gemini] Model list failed:",
+        response.status,
+        text.substring(0, 200)
       );
     }
-  } catch {
-    console.log("Could not fetch available models, using defaults");
+  } catch (err) {
+    console.error("[Gemini] Could not fetch available models:", err);
   }
   return [];
 }
