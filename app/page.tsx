@@ -1,65 +1,198 @@
-import Image from "next/image";
+"use client";
+
+// Main page for expense splitting tool
+import { useState } from "react";
+import ReceiptUpload from "@/components/ReceiptUpload";
+import ReceiptAnalysis from "@/components/ReceiptAnalysis";
+import PeopleManager from "@/components/PeopleManager";
+import ItemAllocation from "@/components/ItemAllocation";
+import ExpenseSummary from "@/components/ExpenseSummary";
+import {
+  Person,
+  ItemAllocation as ItemAllocationType,
+  ReceiptAnalysis as ReceiptAnalysisType,
+  PersonExpense,
+} from "@/types";
+import { calculateExpenses } from "@/lib/calculations";
 
 export default function Home() {
+  const [receiptData, setReceiptData] = useState<ReceiptAnalysisType | null>(
+    null
+  );
+  const [people, setPeople] = useState<Person[]>([]);
+  const [allocations, setAllocations] = useState<ItemAllocationType[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tax, setTax] = useState<number>(0);
+
+  // Handle file upload and analysis
+  const handleFileUpload = async (file: File) => {
+    setIsAnalyzing(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/analyze-receipt", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to analyze receipt");
+      }
+
+      const data: ReceiptAnalysisType = await response.json();
+      setReceiptData(data);
+      // Reset allocations when new receipt is analyzed
+      setAllocations([]);
+      // Calculate tax/surcharge if total > sum of items
+      const itemsTotal = data.items.reduce((sum, item) => sum + item.price, 0);
+      const calculatedTax =
+        data.total > itemsTotal ? data.total - itemsTotal : 0;
+      setTax(calculatedTax);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Có lỗi xảy ra khi phân tích hoá đơn"
+      );
+      console.error("Error analyzing receipt:", err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Manage people
+  const handleAddPerson = (name: string) => {
+    const newPerson: Person = {
+      id: `person-${Date.now()}`,
+      name,
+    };
+    setPeople([...people, newPerson]);
+  };
+
+  const handleRemovePerson = (id: string) => {
+    setPeople(people.filter((p) => p.id !== id));
+    // Remove allocations for this person
+    setAllocations(
+      allocations
+        .map((alloc) => ({
+          ...alloc,
+          personIds: alloc.personIds.filter((pid) => pid !== id),
+        }))
+        .filter((alloc) => alloc.personIds.length > 0)
+    );
+  };
+
+  // Handle contribution update
+  const handleUpdateContribution = (id: string, amount: number) => {
+    setPeople(
+      people.map((p) => (p.id === id ? { ...p, contribution: amount } : p))
+    );
+  };
+
+  // Handle item allocation
+  const handleAllocationChange = (itemId: string, personIds: string[]) => {
+    setAllocations((prev) => {
+      const filtered = prev.filter((a) => a.itemId !== itemId);
+      if (personIds.length > 0) {
+        return [...filtered, { itemId, personIds }];
+      }
+      return filtered;
+    });
+  };
+
+  // Calculate expenses with tax
+  const itemsTotal = receiptData
+    ? receiptData.items.reduce((sum, item) => sum + item.price, 0)
+    : 0;
+  const finalTotal = itemsTotal + tax;
+
+  const expenses: PersonExpense[] = receiptData
+    ? calculateExpenses(receiptData.items, people, allocations, finalTotal)
+    : [];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Tool Chia Tiền
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-gray-600">
+            Upload hoá đơn, AI sẽ phân tích và giúp bạn chia tiền công bằng
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Upload Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <ReceiptUpload
+            onUpload={handleFileUpload}
+            isAnalyzing={isAnalyzing}
+          />
+          {isAnalyzing && (
+            <div className="mt-4 text-center text-gray-600">
+              <p>Đang phân tích hoá đơn...</p>
+            </div>
+          )}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {error}
+            </div>
+          )}
         </div>
-      </main>
+
+        {/* Receipt Analysis */}
+        {receiptData && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <ReceiptAnalysis
+              items={receiptData.items}
+              total={receiptData.total}
+              currency={receiptData.currency}
+              tax={tax}
+              onTaxChange={setTax}
+            />
+          </div>
+        )}
+
+        {/* People Management */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <PeopleManager
+            people={people}
+            onAddPerson={handleAddPerson}
+            onRemovePerson={handleRemovePerson}
+            onUpdateContribution={handleUpdateContribution}
+          />
+        </div>
+
+        {/* Item Allocation */}
+        {receiptData && people.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <ItemAllocation
+              items={receiptData.items}
+              people={people}
+              allocations={allocations}
+              onAllocationChange={handleAllocationChange}
+            />
+          </div>
+        )}
+
+        {/* Expense Summary */}
+        {expenses.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <ExpenseSummary
+              expenses={expenses}
+              receiptTotal={finalTotal}
+              items={receiptData?.items}
+              allocations={allocations}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

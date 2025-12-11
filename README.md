@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tool Chia Tiền - AI Expense Splitter
 
-## Getting Started
+Công cụ chia tiền thông minh sử dụng AI để phân tích hoá đơn và tự động chia tiền theo từng người và món họ ăn.
 
-First, run the development server:
+## Tính năng
 
+- 📸 Upload hình ảnh hoá đơn (drag & drop hoặc chọn file)
+- 🤖 AI tự động phân tích và extract các món ăn và giá tiền
+- 👥 Quản lý danh sách người tham gia
+- 🍽️ Phân bổ món ăn cho từng người
+- 💰 Tính toán và hiển thị số tiền mỗi người phải trả
+
+## Yêu cầu
+
+- Node.js 18+ 
+- Google Gemini API Key (miễn phí, lấy tại [aistudio.google.com](https://aistudio.google.com/app/apikey))
+
+## Cài đặt
+
+1. Clone repository hoặc tải source code
+
+2. Cài đặt dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Tạo file `.env.local` và thêm Gemini API key:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Lấy Gemini API Key:**
+- Truy cập: https://aistudio.google.com/app/apikey
+- Đăng nhập bằng Google account
+- Click "Create API Key" 
+- Copy API key và paste vào file `.env.local`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Chạy development server:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Mở [http://localhost:3000](http://localhost:3000) trong trình duyệt
 
-To learn more about Next.js, take a look at the following resources:
+## Sử dụng
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Upload hoá đơn**: Kéo thả hoặc chọn file hình ảnh hoá đơn
+2. **AI phân tích**: Hệ thống sẽ tự động phân tích và hiển thị các món ăn
+3. **Thêm người**: Thêm tên các người tham gia
+4. **Phân bổ món**: Click vào tên người để phân bổ món ăn cho họ
+5. **Xem kết quả**: Hệ thống sẽ tự động tính toán số tiền mỗi người phải trả
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
+- **Framework**: Next.js 14 (App Router) với TypeScript
+- **UI**: React + Tailwind CSS
+- **AI**: Google Gemini 1.5 Pro (Vision API)
+- **State Management**: React Hooks
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Có thể deploy lên Vercel một cách dễ dàng:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/toolprice)
+
+Nhớ thêm biến môi trường `GEMINI_API_KEY` trong Vercel dashboard.
