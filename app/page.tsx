@@ -42,6 +42,12 @@ export default function Home() {
       if (!response.ok) {
         // Read response as text first (can only read once)
         const text = await response.text();
+        console.error("[FE] API error response:", {
+          status: response.status,
+          statusText: response.statusText,
+          text: text.substring(0, 200),
+        });
+
         let errorMessage = "Failed to analyze receipt";
 
         // Try to parse as JSON, but handle text responses too
@@ -49,10 +55,15 @@ export default function Home() {
           const errorData = JSON.parse(text);
           errorMessage = errorData.error || errorData.details || errorMessage;
         } catch {
-          // If response is not JSON (e.g., "Forbidden"), use text directly
-          errorMessage =
-            text ||
-            `Server returned ${response.status}: ${response.statusText}`;
+          // If response is not JSON (e.g., "Forbidden"), clean up the message
+          if (text.includes("Forbidden")) {
+            // This might be from Vercel Edge/Blob, provide a clearer message
+            errorMessage = `Server returned ${response.status} Forbidden. Please check if GEMINI_API_KEY is configured correctly on Vercel.`;
+          } else {
+            errorMessage =
+              text ||
+              `Server returned ${response.status}: ${response.statusText}`;
+          }
         }
         throw new Error(errorMessage);
       }
