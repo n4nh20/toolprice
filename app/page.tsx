@@ -37,6 +37,10 @@ export default function Home() {
       const response = await fetch("/api/analyze-receipt", {
         method: "POST",
         body: formData,
+        // Explicitly disable Vercel's auto-upload handling
+        headers: {
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
       });
 
       if (!response.ok) {
